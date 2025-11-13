@@ -13,28 +13,9 @@ dependencies {
   implementation("org.xerial:sqlite-jdbc:3.50.3.0")
 }
 
-tasks.register<JavaExec>("runHello") {
+
+tasks.register<JavaExec>("runGamification") {
   group = "application"
-  mainClass.set("demo.HelloJavalin")
-  classpath = sourceSets["main"].runtimeClasspath
-}
-tasks.register<JavaExec>("runAdviceText") {
-  group = "application"
-  mainClass.set("demo.RandomAdviceService")
-  classpath = sourceSets["main"].runtimeClasspath
-}
-tasks.register<JavaExec>("runAdviceJson") {
-  group = "application"
-  mainClass.set("demo.RandomAdviceServiceJson")
-  classpath = sourceSets["main"].runtimeClasspath
-}
-tasks.register<JavaExec>("runPoi") {
-  group = "application"
-  mainClass.set("demo.PoiService")
-  classpath = sourceSets["main"].runtimeClasspath
-}
-tasks.register<JavaExec>("runSqlite") {
-  group = "application"
-  mainClass.set("demo.SqliteService")
+  mainClass.set("demo.Gamification")
   classpath = sourceSets["main"].runtimeClasspath
 }

@@ -10,8 +10,9 @@ import demo.service.GamificacaoManager;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
-public class Main {
+public class Gamification {
 
     public static void main(String[] args) throws Exception {
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "3000"));
