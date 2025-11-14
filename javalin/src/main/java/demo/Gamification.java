@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 
 public class Gamification {
@@ -34,12 +36,17 @@ public class Gamification {
     public static void main(String[] args) {
         Javalin app = Javalin.create(config -> {
             config.jsonMapper(new JavalinJackson());
-            config.staticFiles.add(staticFileConfig -> {
-            staticFileConfig.hostedPath = "/";
-            staticFileConfig.directory = "src/main/resources/public";  // <-- Coloque aqui
-        });
         }).start(Integer.parseInt(System.getenv().getOrDefault("PORT", "3000")));
 
+        app.get("/", ctx -> {
+               try {
+                   String html = new String(Files.readAllBytes(Paths.get("src/main/resources/public/index.html")));
+                   ctx.html(html);
+               } catch (Exception e) {
+                   ctx.status(500).result("Erro ao carregar index.html: " + e.getMessage());
+               }
+           });
+           
         // Inicializar banco
         initDatabase();
 
