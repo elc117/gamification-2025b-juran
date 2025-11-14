@@ -48,7 +48,7 @@ test-gamification:
 	@echo -e "\n--> Deletar treino (ID 1)"
 	curl -s -X DELETE $(BASE_URL)/treinos/1
 
-    @echo -e "\n--> Status do usuário (gamificação)"
+	@echo -e "\n--> Status do usuário (gamificação)"
 	curl -s $(BASE_URL)/usuario | jq .
 
 # Print info 

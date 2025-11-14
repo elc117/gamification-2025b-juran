@@ -1,21 +1,29 @@
 plugins {
-  application
+    id("java")
+    id("application")
 }
 
-java {
-  toolchain { languageVersion.set(org.gradle.jvm.toolchain.JavaLanguageVersion.of(17)) }
+repositories {
+    mavenCentral()
 }
-
-repositories { mavenCentral() }
 
 dependencies {
-  implementation("io.javalin:javalin-bundle:6.7.0")
-  implementation("org.xerial:sqlite-jdbc:3.50.3.0")
+    implementation("io.javalin:javalin:5.6.3")  // Javalin
+    implementation("org.xerial:sqlite-jdbc:3.42.0.0")  // SQLite JDBC driver
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.0")
+    }
+
+application {
+    mainClass.set("demo.Gamification")  // Classe principal
 }
 
+tasks.jar {
+    manifest {
+        attributes("Main-Class" to "demo.Gamification")
+    }
+}
 
 tasks.register<JavaExec>("runGamification") {
-  group = "application"
-  mainClass.set("demo.Gamification")
-  classpath = sourceSets["main"].runtimeClasspath
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("demo.Gamification")
 }

@@ -1,4 +1,4 @@
-package demo.service;
+package demo.dao;
 
 import demo.model.Treino;
 import java.sql.*;
