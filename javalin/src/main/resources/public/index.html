@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamificação de Basquete</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h1 { color: #333; text-align: center; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .calendar { margin: 20px 0; }
+        .calendar table { width: 100%; border-collapse: collapse; }
+        .calendar th, .calendar td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        .calendar .today { background-color: #ffeb3b; font-weight: bold; }
+        .challenge { margin: 20px 0; padding: 10px; background: #e3f2fd; border-radius: 5px; }
+        .court { margin: 20px 0; text-align: center; }
+        canvas { border: 2px solid #333; background: #8bc34a; }
+        button { padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #1976d2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gamificação de Basquete</h1>
+        
+        <!-- Calendário -->
+        <div class="calendar">
+            <h2>Calendário de Desafios</h2>
+            <table id="calendar-table">
+                <!-- Calendário gerado dinamicamente -->
+            </table>
+        </div>
+        
+        <!-- Desafio do Dia -->
+        <div class="challenge" id="challenge">
+            <h3>Desafio do Dia</h3>
+            <p id="challenge-text">Carregando...</p>
+        </div>
+        
+        <!-- Quadra -->
+        <div class="court">
+            <h2>Quadra de Basquete</h2>
+            <canvas id="court-canvas" width="400" height="300"></canvas>
+            <br>
+            <button onclick="loadRandomPoint()">Gerar Ponto Aleatório</button>
+            <p id="point-info">Clique para gerar um ponto na quadra!</p>
+        </div>
+        
+        <!-- Status do Usuário -->
+        <div>
+            <h2>Seu Status</h2>
+            <p id="user-status">Carregando...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // Carregar Desafio Diário
+        async function loadChallenge() {
+            try {
+                const response = await fetch(`${API_BASE}/desafios/diario`);
+                const data = await response.json();
+                document.getElementById('challenge-text').textContent = data.desafio;
+            } catch (error) {
+                document.getElementById('challenge-text').textContent = 'Erro ao carregar desafio.';
+            }
+        }
+
+        // Carregar Status do Usuário
+        async function loadUserStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/usuario`);
+                const data = await response.json();
+                document.getElementById('user-status').textContent = `Pontos: ${data.pontos} - ${data.status}`;
+            } catch (error) {
+                document.getElementById('user-status').textContent = 'Erro ao carregar status.';
+            }
+        }
+
+        // Gerar Calendário
+        function generateCalendar() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const today = now.getDate();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let table = '<tr><th>Dom</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th>Sáb</th></tr><tr>';
+            for (let i = 0; i < firstDay; i++) {
+                table += '<td></td>';
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+                const className = day === today ? 'today' : '';
+                table += `<td class="${className}">${day}</td>`;
+                if ((firstDay + day) % 7 === 0) table += '</tr><tr>';
+            }
+            table += '</tr>';
+            document.getElementById('calendar-table').innerHTML = table;
+        }
+
+        // Desenhar Quadra e Ponto Aleatório
+        function drawCourt(x = null, y = null) {
+            const canvas = document.getElementById('court-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Desenhar linhas básicas da quadra (metade)
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(50, 50); // Cesta esquerda
+            ctx.lineTo(50, 250);
+            ctx.moveTo(350, 50); // Cesta direita
+            ctx.lineTo(350, 250);
+            ctx.stroke();
+            
+            // Desenhar cesta (arco simples)
+            ctx.beginPath();
+            ctx.arc(200, 50, 30, 0, Math.PI, true);
+            ctx.stroke();
+            
+            // Marcar ponto aleatório
+            if (x !== null && y !== null) {
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                ctx.fill();
+                document.getElementById('point-info').textContent = `Ponto: (${x}, ${y}) - Tente acertar a cesta!`;
+            }
+        }
+
+        // Car

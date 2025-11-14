@@ -8,16 +8,36 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;  // Import adicionado para ArrayList
-import java.util.List;      // Import adicionado para List
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+
 
 public class Gamification {
 
     private static final String DB_URL = "jdbc:sqlite:treinos.db";
+    private static final List<String> DESAFIOS = List.of(
+        "Acertar 2 bolas seguidas de três pontos",
+        "Correr 5km em menos de 30 minutos",
+        "Acertar 4 lances livres seguidos",
+        "Fazer 10 dribles sem perder a bola",
+        "Marcar 20 pontos em um jogo de basquete",
+        "Treinar passes por 15 minutos",
+        "Acertar uma cesta de meia quadra",
+        "Fazer 50 abdominais",
+        "Melhorar tempo em corrida de 100m",
+        "Praticar defesa por 20 minutos"
+    );
 
     public static void main(String[] args) {
         Javalin app = Javalin.create(config -> {
-            config.jsonMapper(new JavalinJackson());  // Configura Jackson para JSON (usando import corrigido)
+            config.jsonMapper(new JavalinJackson());
+            config.staticFiles.add(staticFileConfig -> {
+            staticFileConfig.hostedPath = "/";
+            staticFileConfig.directory = "src/main/resources/public";  // <-- Coloque aqui
+        });
         }).start(Integer.parseInt(System.getenv().getOrDefault("PORT", "3000")));
 
         // Inicializar banco
@@ -31,6 +51,8 @@ public class Gamification {
         app.put("/treinos/{id}", Gamification::updateTreino);
         app.delete("/treinos/{id}", Gamification::deleteTreino);
         app.get("/usuario", Gamification::getUsuarioStatus);
+        app.get("/desafios/diario", Gamification::getDesafioDiario);
+        app.get("/quadra/ponto-aleatorio", Gamification::getPontoAleatorio);
     }
 
     private static void initDatabase() {
@@ -159,7 +181,19 @@ public class Gamification {
         return treino.getTipo().equals("arremesso") ? treino.getQuantidade() * 10 : treino.getQuantidade() * 5;
     }
 
-    // Classe Treino (deve estar em model/Treino.java, mas incluída aqui para simplicidade)
+    private static void getDesafioDiario(Context ctx) {
+        LocalDate hoje = LocalDate.now();
+        int diaDoAno = hoje.getDayOfYear();
+        String desafio = DESAFIOS.get(diaDoAno % DESAFIOS.size());  // Cicla pelos desafios
+        ctx.json(Map.of("data", hoje.toString(), "desafio", desafio));
+    }
+
+    private static void getPontoAleatorio(Context ctx) {
+        int x = ThreadLocalRandom.current().nextInt(0, 400);  // Largura da quadra (pixels)
+        int y = ThreadLocalRandom.current().nextInt(0, 300);  // Altura da quadra (pixels)
+        ctx.json(Map.of("x", x, "y", y));
+    }
+
     public static class Treino {
         private int id;
         private String tipo;
@@ -185,7 +219,6 @@ public class Gamification {
         public void setData(String data) { this.data = data; }
     }
 
-    // Classe UsuarioStatus
     public static class UsuarioStatus {
         private int pontos;
         private String status;
