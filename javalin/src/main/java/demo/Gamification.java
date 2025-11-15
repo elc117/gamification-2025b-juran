@@ -17,25 +17,26 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-// Enum para tipos de treino (melhora validação)
+// Enum para tipos de treino (atualizado: adicionado SALTOS, removidos DEFESA e PASSES)
 enum TipoTreino {
-    ARREMESSO, CORRIDA, DEFESA, PASSES, ABDOMINAIS
+    ARREMESSO, CORRIDA, SALTOS, ABDOMINAIS
 }
 
 public class Gamification {
 
     private static final String DB_URL = "jdbc:sqlite:treinos.db";
+    // Lista de desafios atualizada (apenas corrida, abdominais, saltos e arremessos)
     private static final List<String> DESAFIOS = List.of(
-        "Acertar 2 bolas seguidas de três pontos",
-        "Correr 5km em menos de 30 minutos",
-        "Acertar 4 lances livres seguidos",
-        "Fazer 10 dribles sem perder a bola",
-        "Marcar 20 pontos em um jogo de basquete",
-        "Treinar passes por 15 minutos",
-        "Acertar uma cesta de meia quadra",
+        "Corrida de 5km em menos de 30 minutos",
         "Fazer 50 abdominais",
-        "Melhorar tempo em corrida de 100m",
-        "Praticar defesa por 20 minutos"
+        "Saltar 20 vezes seguidas",
+        "Acertar 10 arremessos seguidos de três pontos",
+        "Corrida de 10km",
+        "Fazer 100 abdominais",
+        "Saltar 50 vezes",
+        "Acertar 20 arremessos de meia quadra",
+        "Corrida de 15km",
+        "Fazer 150 abdominais"
     );
 
     public static void main(String[] args) {
@@ -66,8 +67,9 @@ public class Gamification {
         app.delete("/treinos/{id}", Gamification::deleteTreino);
         app.get("/usuario", Gamification::getUsuarioStatus);
         app.get("/desafios/diario", Gamification::getDesafioDiario);
+        app.post("/desafios/concluir", Gamification::concluirDesafio);  // Nova rota para concluir desafio
         app.get("/quadra/ponto-aleatorio", Gamification::getPontoAleatorio);
-        app.get("/estatisticas", Gamification::getEstatisticas);  // Nova rota para estatísticas
+        app.get("/estatisticas", Gamification::getEstatisticas);
         app.get("/assets/*", ctx -> {
             String path = ctx.path().substring(1);
             try {
@@ -109,7 +111,7 @@ public class Gamification {
     private static void createTreino(Context ctx) {
         try {
             Treino treino = ctx.bodyAsClass(Treino.class);
-            if (!isValidTreino(treino)) {  // Validação aprimorada
+            if (!isValidTreino(treino)) {
                 ctx.status(400).result("Dados inválidos: tipo deve ser válido e quantidade > 0");
                 return;
             }
@@ -223,18 +225,65 @@ public class Gamification {
             return switch (tipo) {
                 case ARREMESSO -> treino.getQuantidade() * 10;
                 case CORRIDA -> treino.getQuantidade() * 8;
+                case SALTOS -> treino.getQuantidade() * 6;  // Novo peso para saltos
                 default -> treino.getQuantidade() * 5;
             };
         } catch (IllegalArgumentException e) {
-            return treino.getQuantidade() * 5;  // Fallback
+            return treino.getQuantidade() * 5;
         }
     }
 
     private static void getDesafioDiario(Context ctx) {
-        LocalDate hoje = LocalDate.now();
-        int diaDoAno = hoje.getDayOfYear();
+        String dateParam = ctx.queryParam("date");
+        LocalDate date = dateParam != null ? LocalDate.parse(dateParam) : LocalDate.now();
+        int diaDoAno = date.getDayOfYear();
         String desafio = DESAFIOS.get(diaDoAno % DESAFIOS.size());
-        ctx.json(Map.of("data", hoje.toString(), "desafio", desafio));
+        ctx.json(Map.of("data", date.toString(), "desafio", desafio));
+    }
+
+    // Nova rota para concluir desafio e cadastrar treino
+    private static void concluirDesafio(Context ctx) {
+        try {
+            String dateParam = ctx.queryParam("date");
+            LocalDate date = dateParam != null ? LocalDate.parse(dateParam) : LocalDate.now();
+            int diaDoAno = date.getDayOfYear();
+            String desafio = DESAFIOS.get(diaDoAno % DESAFIOS.size());
+            
+            String tipo = extrairTipoDoDesafio(desafio);
+            int quantidade = extrairQuantidadeDoDesafio(desafio);
+            
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                 PreparedStatement stmt = conn.prepareStatement("INSERT INTO treinos (tipo, quantidade, data) VALUES (?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, tipo);
+                stmt.setInt(2, quantidade);
+                stmt.setString(3, date.toString());
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    ctx.result("Desafio concluído e cadastrado como treino!");
+                }
+            }
+        } catch (Exception e) {
+            ctx.status(500).result("Erro ao concluir desafio: " + e.getMessage());
+        }
+    }
+
+    // Funções auxiliares para extrair tipo e quantidade do desafio
+    private static String extrairTipoDoDesafio(String desafio) {
+        if (desafio.contains("Corrida")) return "corrida";
+        if (desafio.contains("abdominais")) return "abdominais";
+        if (desafio.contains("Saltar")) return "saltos";
+        if (desafio.contains("arremessos")) return "arremesso";
+        return "corrida";
+    }
+
+    private static int extrairQuantidadeDoDesafio(String desafio) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\d+");
+        java.util.regex.Matcher matcher = pattern.matcher(desafio);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group());
+        }
+        return 1;
     }
 
     private static void getPontoAleatorio(Context ctx) {
@@ -243,12 +292,11 @@ public class Gamification {
         ctx.json(Map.of("x", x, "y", y));
     }
 
-    // Nova rota para estatísticas
     private static void getEstatisticas(Context ctx) {
         try {
             Map<String, List<Map<String, Object>>> stats = new HashMap<>();
             try (Connection conn = DriverManager.getConnection(DB_URL);
-                ResultSet rs = conn.createStatement().executeQuery("SELECT tipo, data, SUM(quantidade) AS total FROM treinos GROUP BY tipo, data ORDER BY data")) {
+                 ResultSet rs = conn.createStatement().executeQuery("SELECT tipo, data, SUM(quantidade) AS total FROM treinos GROUP BY tipo, data ORDER BY data")) {
                 while (rs.next()) {
                     String tipo = rs.getString("tipo").toLowerCase();
                     String data = rs.getString("data");
@@ -262,7 +310,6 @@ public class Gamification {
         }
     }
 
-    // Classe auxiliar para Treino (com getters e setters completos)
     public static class Treino {
         private int id;
         private String tipo;
@@ -288,7 +335,6 @@ public class Gamification {
         public void setData(String data) { this.data = data; }
     }
 
-    // Classe auxiliar para UsuarioStatus (atualizada)
     public static class UsuarioStatus {
         private int pontos;
         private String status;

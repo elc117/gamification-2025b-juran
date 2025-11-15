@@ -10,7 +10,7 @@
         .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         .section { margin: 20px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
         .calendar table { width: 100%; border-collapse: collapse; }
-        .calendar th, .calendar td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        .calendar th, .calendar td { border: 1px solid #ddd; padding: 10px; text-align: center; cursor: pointer; }
         .calendar .today { background-color: #ffeb3b; font-weight: bold; }
         .challenge { background: #e3f2fd; }
         .court { text-align: center; }
@@ -39,8 +39,10 @@
         
         <!-- Desafio do Dia -->
         <div class="section challenge">
-            <h3>Desafio do Dia</h3>
+            <h3 id="challenge-title">Desafio do Dia</h3>
             <p id="challenge-text">Carregando...</p>
+            <button id="concluir-btn" style="display: none;">Concluído</button>
+            <p id="challenge-message"></p>
         </div>
         
         <!-- Quadra -->
@@ -67,8 +69,7 @@
                     <option value="">Selecione Tipo</option>
                     <option value="arremesso">Arremesso</option>
                     <option value="corrida">Corrida</option>
-                    <option value="defesa">Defesa</option>
-                    <option value="passes">Passes</option>
+                    <option value="saltos">Saltos</option>
                     <option value="abdominais">Abdominais</option>
                 </select>
                 <input type="number" id="quantidade" placeholder="Quantidade" min="1" required>
@@ -92,8 +93,7 @@
             <div>
                 <label><input type="checkbox" value="arremesso" checked> Arremesso</label>
                 <label><input type="checkbox" value="corrida" checked> Corrida</label>
-                <label><input type="checkbox" value="defesa"> Defesa</label>
-                <label><input type="checkbox" value="passes"> Passes</label>
+                <label><input type="checkbox" value="saltos"> Saltos</label>
                 <label><input type="checkbox" value="abdominais"> Abdominais</label>
             </div>
             <canvas id="stats-chart" width="600" height="300"></canvas>
@@ -103,30 +103,42 @@
 
     <script>
         const API_BASE = window.location.origin;
+        // Correção: Usar data local do navegador para evitar fuso horário
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        let currentChallengeDate = `${year}-${month}-${day}`;  // Data local correta (ex.: 2023-10-14)
 
-        // Carregar Desafio Diário
-        async function loadChallenge() {
+        // Carregar Desafio para uma Data Específica
+        async function loadChallengeForDate(date) {
             try {
-                const response = await fetch(`${API_BASE}/desafios/diario`);
+                const response = await fetch(`${API_BASE}/desafios/diario?date=${date}`);
                 const data = await response.json();
+                document.getElementById('challenge-title').textContent = `Desafio de ${data.data}`;
                 document.getElementById('challenge-text').textContent = data.desafio;
+                
+                const isToday = date === currentChallengeDate;
+                const concluido = localStorage.getItem(`desafio-${date}`) === 'concluido';
+                const btn = document.getElementById('concluir-btn');
+                if (isToday && !concluido) {
+                    btn.style.display = 'inline-block';
+                    btn.onclick = () => concluirDesafio(date);
+                } else {
+                    btn.style.display = 'none';
+                }
+                document.getElementById('challenge-message').textContent = concluido ? 'Desafio já concluído!' : '';
             } catch (error) {
                 document.getElementById('challenge-text').textContent = 'Erro ao carregar desafio.';
             }
         }
 
-        // Carregar Status do Usuário
-        async function loadUserStatus() {
-            try {
-                const response = await fetch(`${API_BASE}/usuario`);
-                const data = await response.json();
-                document.getElementById('user-status').textContent = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
-            } catch (error) {
-                document.getElementById('user-status').textContent = 'Erro ao carregar status.';
-            }
+        // Carregar Desafio Diário (padrão para hoje)
+        async function loadChallenge() {
+            await loadChallengeForDate(currentChallengeDate);
         }
 
-        // Gerar Calendário
+        // Gerar Calendário (com cliques e checkmarks)
         function generateCalendar() {
             const now = new Date();
             const year = now.getFullYear();
@@ -140,12 +152,43 @@
                 table += '<td></td>';
             }
             for (let day = 1; day <= daysInMonth; day++) {
-                const className = day === today ? 'today' : '';
-                table += `<td class="${className}">${day}</td>`;
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = day === today;
+                const className = isToday ? 'today' : '';
+                const checkmark = localStorage.getItem(`desafio-${dateStr}`) === 'concluido' ? ' ✓' : '';
+                table += `<td class="${className}" onclick="loadChallengeForDate('${dateStr}')">${day}${checkmark}</td>`;
                 if ((firstDay + day) % 7 === 0) table += '</tr><tr>';
             }
             table += '</tr>';
             document.getElementById('calendar-table').innerHTML = table;
+        }
+
+        // Concluir Desafio
+        async function concluirDesafio(date) {
+            try {
+                const response = await fetch(`${API_BASE}/desafios/concluir?date=${date}`, { method: 'POST' });
+                const result = await response.text();
+                document.getElementById('challenge-message').textContent = result;
+                localStorage.setItem(`desafio-${date}`, 'concluido');
+                generateCalendar();
+                loadTreinos();
+                loadUserStatus();
+                loadStats();
+                document.getElementById('concluir-btn').style.display = 'none';
+            } catch (error) {
+                document.getElementById('challenge-message').textContent = 'Erro ao concluir desafio.';
+            }
+        }
+
+        // Carregar Status do Usuário
+        async function loadUserStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/usuario`);
+                const data = await response.json();
+                document.getElementById('user-status').textContent = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
+            } catch (error) {
+                document.getElementById('user-status').textContent = 'Erro ao carregar status.';
+            }
         }
 
         // Desenhar Quadra
@@ -231,9 +274,8 @@
             }
         });
 
-        // Editar Treino (simples: preenche formulário)
+        // Editar Treino (simples)
         function editTreino(id) {
-            // Para edição completa, precisaria de um modal ou campos extras. Aqui, apenas exemplo básico.
             alert(`Editar treino ${id} - Implemente modal para edição avançada.`);
         }
 
@@ -253,8 +295,8 @@
             }
         }
 
-        let statsData = {};  // Armazenar dados globais
-        let chartInstance = null;  // Instância do gráfico
+        let statsData = {};
+        let chartInstance = null;
 
         // Carregar Estatísticas e Gráfico
         async function loadStats() {
@@ -276,7 +318,7 @@
                 entries.forEach(entry => {
                     text += `${entry.quantidade} em ${entry.data}, `;
                 });
-                text = text.slice(0, -2) + '; ';  // Remove última vírgula e adiciona ponto e vírgula
+                text = text.slice(0, -2) + '; ';
             }
             document.getElementById('stats-text').textContent = text || 'Nenhum dado disponível.';
         }
@@ -287,11 +329,9 @@
             const datasets = [];
             const allDates = new Set();
 
-            // Coletar todas as datas
             Object.values(statsData).forEach(entries => entries.forEach(entry => allDates.add(entry.data)));
             const sortedDates = Array.from(allDates).sort();
 
-            // Criar datasets para tipos selecionados
             selectedTypes.forEach(tipo => {
                 if (statsData[tipo]) {
                     const dataMap = {};
@@ -306,10 +346,8 @@
                 }
             });
 
-            // Destruir gráfico anterior se existir
             if (chartInstance) chartInstance.destroy();
 
-            // Criar novo gráfico
             const ctx = document.getElementById('stats-chart').getContext('2d');
             chartInstance = new Chart(ctx, {
                 type: 'line',
