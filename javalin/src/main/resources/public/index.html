@@ -58,6 +58,7 @@
             <canvas id="court-canvas" width="355" height="289"></canvas>
             <br>
             <button onclick="loadRandomPoint()">Gerar Ponto Aleatório</button>
+            <button onclick="loadSequenciaHabilidades()">Gerar Sequência de Habilidades</button>
             <p id="point-info">Clique para gerar um ponto na quadra!</p>
         </div>
         
@@ -107,7 +108,7 @@
             <p id="stats-text">Carregando...</p>
         </div>
     </div>
-        <script>
+            <script>
         const API_BASE = window.location.origin;
         // Correção: Usar data local do navegador para evitar fuso horário
         const now = new Date();
@@ -216,21 +217,26 @@
             }
         }
 
-        // Desenhar Quadra
+        // Desenhar Ponto na Quadra
         function drawCourt(x = null, y = null) {
             const canvas = document.getElementById('court-canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
-            img.src = '/assets/meia_quadraB.jpg';
+            img.src = '/assets/meia_quadraB.jpg';  // Manter meia_quadraB.jpg para ponto aleatório
             img.onload = function() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 if (x !== null && y !== null) {
-                    ctx.fillStyle = 'red';
+                    // Círculo branco
+                    ctx.fillStyle = 'white';
                     ctx.beginPath();
-                    ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                    ctx.arc(x, y, 15, 0, 2 * Math.PI);
                     ctx.fill();
-                    document.getElementById('point-info').textContent = `Ponto: (${x}, ${y}) - Tente acertar a cesta!`;
+                    // Borda preta
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    document.getElementById('point-info').textContent = `Ponto Aleatório: 1 (${x}, ${y}) - Tente acertar a cesta!`;
                 }
             };
             img.onerror = function() {
@@ -248,6 +254,83 @@
             } catch (error) {
                 document.getElementById('point-info').textContent = 'Erro ao gerar ponto.';
             }
+        }
+
+        // Carregar Sequência de Habilidades
+        async function loadSequenciaHabilidades() {
+            try {
+                const response = await fetch(`${API_BASE}/quadra/sequencia-habilidades`);
+                const pontos = await response.json();
+                drawCourtWithSequencia(pontos);
+            } catch (error) {
+                document.getElementById('point-info').textContent = 'Erro ao gerar sequência.';
+            }
+        }
+
+        // Desenhar Quadra com Sequência (usando quadra.jpg)
+        function drawCourtWithSequencia(pontos = []) {
+            const canvas = document.getElementById('court-canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.src = '/assets/quadra.jpg';  // Usar quadra.jpg para habilidades
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                if (pontos.length === 3) {
+                    // Desenhar pontos numerados
+                    pontos.forEach((ponto, index) => {
+                        const numero = index + 1;
+                        // Círculo branco
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(ponto.x, ponto.y, 15, 0, 2 * Math.PI);
+                        ctx.fill();
+                        // Borda preta
+                        ctx.strokeStyle = 'black';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        // Número
+                        ctx.fillStyle = 'black';
+                        ctx.font = '16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(numero, ponto.x, ponto.y + 5);
+                    });
+                    
+                    // Desenhar setas: 1 → 2 → 3
+                    drawArrow(ctx, pontos[0].x, pontos[0].y, pontos[1].x, pontos[1].y);
+                    drawArrow(ctx, pontos[1].x, pontos[1].y, pontos[2].x, pontos[2].y);
+                    
+                    document.getElementById('point-info').textContent = `Sequência: 1 (${pontos[0].x}, ${pontos[0].y}) → 2 (${pontos[1].x}, ${pontos[1].y}) → 3 (${pontos[2].x}, ${pontos[2].y})`;
+                }
+            };
+            img.onerror = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillText('Erro ao carregar imagem da quadra.', 10, 50);
+            };
+        }
+
+        // Função auxiliar para desenhar seta
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headlen = 10; // Comprimento da ponta da seta
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            // Linha principal
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            
+            // Ponta da seta (triângulo)
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = 'red';
+            ctx.fill();
         }
 
         // Carregar Treinos

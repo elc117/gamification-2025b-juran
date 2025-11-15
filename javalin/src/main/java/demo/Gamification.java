@@ -69,6 +69,7 @@ public class Gamification {
         app.get("/desafios/diario", Gamification::getDesafioDiario);
         app.post("/desafios/concluir", Gamification::concluirDesafio);  // Nova rota para concluir desafio
         app.get("/quadra/ponto-aleatorio", Gamification::getPontoAleatorio);
+        app.get("/quadra/sequencia-habilidades", Gamification::getSequenciaHabilidades);  // Novo endpoint para sequência de habilidades
         app.get("/estatisticas", Gamification::getEstatisticas);
         app.get("/assets/*", ctx -> {
             String path = ctx.path().substring(1);
@@ -305,6 +306,17 @@ public class Gamification {
         int x = ThreadLocalRandom.current().nextInt(0, 355);
         int y = ThreadLocalRandom.current().nextInt(0, 289);
         ctx.json(Map.of("x", x, "y", y));
+    }
+
+    // Novo método para sequência de habilidades (3 pontos aleatórios)
+    private static void getSequenciaHabilidades(Context ctx) {
+        List<Map<String, Integer>> pontos = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            int x = ThreadLocalRandom.current().nextInt(0, 355);
+            int y = ThreadLocalRandom.current().nextInt(0, 289);
+            pontos.add(Map.of("x", x, "y", y));
+        }
+        ctx.json(pontos);  // Retorna lista de 3 pontos
     }
 
     private static void getEstatisticas(Context ctx) {
