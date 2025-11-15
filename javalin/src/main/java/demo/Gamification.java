@@ -223,14 +223,29 @@ public class Gamification {
         try {
             TipoTreino tipo = TipoTreino.valueOf(treino.getTipo().toUpperCase());
             return switch (tipo) {
-                case ARREMESSO -> treino.getQuantidade() * 10;
-                case CORRIDA -> treino.getQuantidade() * 8;
-                case SALTOS -> treino.getQuantidade() * 6;  // Novo peso para saltos
-                default -> treino.getQuantidade() * 5;
+                case ARREMESSO -> treino.getQuantidade() * 1;  // 1 ponto por unidade
+                case CORRIDA -> calcularPontosCorrida(treino.getQuantidade());  // Progressivo por km
+                case SALTOS -> treino.getQuantidade() * 4;  // 4 pontos por unidade
+                case ABDOMINAIS -> treino.getQuantidade() / 2;  // 0.5 pontos por unidade (arredonda para baixo)
             };
         } catch (IllegalArgumentException e) {
-            return treino.getQuantidade() * 5;
+            return treino.getQuantidade() * 1;  // Fallback para 1 ponto por unidade
         }
+    }
+
+    // Função auxiliar para pontos de corrida (progressivos por km)
+    private static int calcularPontosCorrida(int km) {
+        if (km <= 0) return 0;
+        int pontos = 0;
+        for (int i = 1; i <= km; i++) {
+            if (i == 1) pontos += 1;
+            else if (i == 2) pontos += 3;
+            else if (i == 3) pontos += 6;
+            else if (i == 4) pontos += 10;
+            else if (i == 5) pontos += 15;
+            else pontos += 10;  // +10 por km adicional
+        }
+        return pontos;
     }
 
     private static void getDesafioDiario(Context ctx) {

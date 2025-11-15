@@ -23,27 +23,34 @@
         table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
         input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        #calendar-btn { position: fixed; top: 10px; right: 10px; z-index: 1000; font-size: 24px; background: none; border: none; cursor: pointer; }
+        #calendar-section { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #333; padding: 20px; z-index: 1001; max-width: 600px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
     </style>
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Gamificação de Basquete</h1>
+    <!-- Botão do Calendário no Canto Superior Direito -->
+    <button id="calendar-btn">📅</button>
+
+    <!-- Calendário e Desafio (oculto por padrão, aparece como popup) -->
+    <div class="section" id="calendar-section" style="display: none;">
+        <h2>Calendário de Desafios</h2>
+        <table id="calendar-table"></table>
         
-        <!-- Calendário -->
-        <div class="section calendar">
-            <h2>Calendário de Desafios</h2>
-            <table id="calendar-table"></table>
-        </div>
-        
-        <!-- Desafio do Dia -->
-        <div class="section challenge">
+        <!-- Desafio do Dia dentro do popup -->
+        <div class="challenge" style="margin-top: 20px;">
             <h3 id="challenge-title">Desafio do Dia</h3>
             <p id="challenge-text">Carregando...</p>
             <button id="concluir-btn" style="display: none;">Concluído</button>
             <p id="challenge-message"></p>
         </div>
+        
+        <button onclick="hideCalendar()" style="margin-top: 10px;">Fechar</button>
+    </div>
+
+    <div class="container">
+        <h1>Gamificação de Basquete</h1>
         
         <!-- Quadra -->
         <div class="section court">
@@ -100,8 +107,7 @@
             <p id="stats-text">Carregando...</p>
         </div>
     </div>
-
-    <script>
+        <script>
         const API_BASE = window.location.origin;
         // Correção: Usar data local do navegador para evitar fuso horário
         const now = new Date();
@@ -162,6 +168,25 @@
             table += '</tr>';
             document.getElementById('calendar-table').innerHTML = table;
         }
+
+        // Toggle Calendário (abrir/fechar ao clicar no ícone)
+        function toggleCalendar() {
+            const section = document.getElementById('calendar-section');
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                loadChallenge();  // Carregar desafio ao abrir
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // Esconder Calendário (para o botão Fechar)
+        function hideCalendar() {
+            document.getElementById('calendar-section').style.display = 'none';
+        }
+
+        // Event listener para o botão (toggle)
+        document.getElementById('calendar-btn').addEventListener('click', toggleCalendar);
 
         // Concluir Desafio
         async function concluirDesafio(date) {
