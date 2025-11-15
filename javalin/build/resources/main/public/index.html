@@ -7,38 +7,44 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
         h1 { color: #333; text-align: center; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .calendar { margin: 20px 0; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
         .calendar table { width: 100%; border-collapse: collapse; }
         .calendar th, .calendar td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         .calendar .today { background-color: #ffeb3b; font-weight: bold; }
-        .challenge { margin: 20px 0; padding: 10px; background: #e3f2fd; border-radius: 5px; }
-        .court { margin: 20px 0; text-align: center; }
+        .challenge { background: #e3f2fd; }
+        .court { text-align: center; }
         canvas { border: 2px solid #333; background: #8bc34a; width: 600px; height: 400px; }
         button { padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
         button:hover { background: #1976d2; }
+        .error { color: red; }
+        .success { color: green; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
     </style>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>Gamificação de Basquete</h1>
         
         <!-- Calendário -->
-        <div class="calendar">
+        <div class="section calendar">
             <h2>Calendário de Desafios</h2>
-            <table id="calendar-table">
-                <!-- Calendário gerado dinamicamente -->
-            </table>
+            <table id="calendar-table"></table>
         </div>
         
         <!-- Desafio do Dia -->
-        <div class="challenge" id="challenge">
+        <div class="section challenge">
             <h3>Desafio do Dia</h3>
             <p id="challenge-text">Carregando...</p>
         </div>
         
         <!-- Quadra -->
-        <div class="court">
+        <div class="section court">
             <h2>Quadra de Basquete</h2>
             <canvas id="court-canvas" width="355" height="289"></canvas>
             <br>
@@ -47,9 +53,51 @@
         </div>
         
         <!-- Status do Usuário -->
-        <div>
+        <div class="section">
             <h2>Seu Status</h2>
             <p id="user-status">Carregando...</p>
+        </div>
+        
+        <!-- Treinos -->
+        <div class="section">
+            <h2>Gerenciar Treinos</h2>
+            <h3>Adicionar Treino</h3>
+            <form id="treino-form">
+                <select id="tipo" required>
+                    <option value="">Selecione Tipo</option>
+                    <option value="arremesso">Arremesso</option>
+                    <option value="corrida">Corrida</option>
+                    <option value="defesa">Defesa</option>
+                    <option value="passes">Passes</option>
+                    <option value="abdominais">Abdominais</option>
+                </select>
+                <input type="number" id="quantidade" placeholder="Quantidade" min="1" required>
+                <input type="date" id="data" required>
+                <button type="submit">Adicionar Treino</button>
+            </form>
+            <p id="form-message"></p>
+            
+            <h3>Lista de Treinos</h3>
+            <table id="treinos-table">
+                <thead>
+                    <tr><th>ID</th><th>Tipo</th><th>Quantidade</th><th>Data</th><th>Ações</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <!-- Estatísticas -->
+        <div class="section">
+            <h2>Estatísticas</h2>
+            <div>
+                <label><input type="checkbox" value="arremesso" checked> Arremesso</label>
+                <label><input type="checkbox" value="corrida" checked> Corrida</label>
+                <label><input type="checkbox" value="defesa"> Defesa</label>
+                <label><input type="checkbox" value="passes"> Passes</label>
+                <label><input type="checkbox" value="abdominais"> Abdominais</label>
+            </div>
+            <canvas id="stats-chart" width="600" height="300"></canvas>
+            <p id="stats-text">Carregando...</p>
         </div>
     </div>
 
@@ -72,7 +120,7 @@
             try {
                 const response = await fetch(`${API_BASE}/usuario`);
                 const data = await response.json();
-                document.getElementById('user-status').textContent = `Pontos: ${data.pontos} - ${data.status}`;
+                document.getElementById('user-status').textContent = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
             } catch (error) {
                 document.getElementById('user-status').textContent = 'Erro ao carregar status.';
             }
@@ -100,17 +148,15 @@
             document.getElementById('calendar-table').innerHTML = table;
         }
 
-        // Desenhar Quadra com Imagem e Ponto Aleatório
+        // Desenhar Quadra
         function drawCourt(x = null, y = null) {
             const canvas = document.getElementById('court-canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
-            img.src = '/assets/meia_quadraB.jpg';  // Usar a imagem da quadra
+            img.src = '/assets/meia_quadraB.jpg';
             img.onload = function() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);  // Desenhar imagem como fundo
-                
-                // Marcar ponto aleatório sobre a imagem
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 if (x !== null && y !== null) {
                     ctx.fillStyle = 'red';
                     ctx.beginPath();
@@ -136,12 +182,173 @@
             }
         }
 
+        // Carregar Treinos
+        async function loadTreinos() {
+            try {
+                const response = await fetch(`${API_BASE}/treinos`);
+                const treinos = await response.json();
+                const tbody = document.querySelector('#treinos-table tbody');
+                tbody.innerHTML = '';
+                treinos.forEach(treino => {
+                    const row = `<tr>
+                        <td>${treino.id}</td>
+                        <td>${treino.tipo}</td>
+                        <td>${treino.quantidade}</td>
+                        <td>${treino.data}</td>
+                        <td>
+                            <button onclick="editTreino(${treino.id})">Editar</button>
+                            <button onclick="deleteTreino(${treino.id})">Deletar</button>
+                        </td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar treinos:', error);
+            }
+        }
+
+        // Adicionar Treino
+        document.getElementById('treino-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tipo = document.getElementById('tipo').value;
+            const quantidade = document.getElementById('quantidade').value;
+            const data = document.getElementById('data').value;
+            try {
+                const response = await fetch(`${API_BASE}/treinos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo, quantidade: parseInt(quantidade), data })
+                });
+                const result = await response.text();
+                document.getElementById('form-message').textContent = result;
+                document.getElementById('form-message').className = response.ok ? 'success' : 'error';
+                loadTreinos();
+                loadUserStatus();
+                loadStats();
+            } catch (error) {
+                document.getElementById('form-message').textContent = 'Erro ao adicionar treino.';
+                document.getElementById('form-message').className = 'error';
+            }
+        });
+
+        // Editar Treino (simples: preenche formulário)
+        function editTreino(id) {
+            // Para edição completa, precisaria de um modal ou campos extras. Aqui, apenas exemplo básico.
+            alert(`Editar treino ${id} - Implemente modal para edição avançada.`);
+        }
+
+        // Deletar Treino
+        async function deleteTreino(id) {
+            if (confirm('Deletar treino?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/treinos/${id}`, { method: 'DELETE' });
+                    const result = await response.text();
+                    alert(result);
+                    loadTreinos();
+                    loadUserStatus();
+                    loadStats();
+                } catch (error) {
+                    alert('Erro ao deletar treino.');
+                }
+            }
+        }
+
+        let statsData = {};  // Armazenar dados globais
+        let chartInstance = null;  // Instância do gráfico
+
+        // Carregar Estatísticas e Gráfico
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/estatisticas`);
+                statsData = await response.json();
+                updateChart();
+                updateStatsText();
+            } catch (error) {
+                document.getElementById('stats-text').textContent = 'Erro ao carregar estatísticas.';
+            }
+        }
+
+        // Atualizar Texto das Estatísticas
+        function updateStatsText() {
+            let text = '';
+            for (const [tipo, entries] of Object.entries(statsData)) {
+                text += `${tipo}: `;
+                entries.forEach(entry => {
+                    text += `${entry.quantidade} em ${entry.data}, `;
+                });
+                text = text.slice(0, -2) + '; ';  // Remove última vírgula e adiciona ponto e vírgula
+            }
+            document.getElementById('stats-text').textContent = text || 'Nenhum dado disponível.';
+        }
+
+        // Atualizar Gráfico com Filtros
+        function updateChart() {
+            const selectedTypes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            const datasets = [];
+            const allDates = new Set();
+
+            // Coletar todas as datas
+            Object.values(statsData).forEach(entries => entries.forEach(entry => allDates.add(entry.data)));
+            const sortedDates = Array.from(allDates).sort();
+
+            // Criar datasets para tipos selecionados
+            selectedTypes.forEach(tipo => {
+                if (statsData[tipo]) {
+                    const dataMap = {};
+                    statsData[tipo].forEach(entry => dataMap[entry.data] = entry.quantidade);
+                    const data = sortedDates.map(date => dataMap[date] || 0);
+                    datasets.push({
+                        label: tipo.charAt(0).toUpperCase() + tipo.slice(1),
+                        data: data,
+                        borderColor: getRandomColor(),
+                        fill: false
+                    });
+                }
+            });
+
+            // Destruir gráfico anterior se existir
+            if (chartInstance) chartInstance.destroy();
+
+            // Criar novo gráfico
+            const ctx = document.getElementById('stats-chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Função auxiliar para cores aleatórias
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Adicionar event listeners para checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', updateChart);
+        });
+
         // Inicializar
         window.onload = function() {
             generateCalendar();
             loadChallenge();
             loadUserStatus();
-            drawCourt();  // Desenhar quadra inicial sem ponto
+            drawCourt();
+            loadTreinos();
+            loadStats();
         };
     </script>
 </body>
