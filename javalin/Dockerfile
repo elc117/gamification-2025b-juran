@@ -1,6 +1,6 @@
 FROM eclipse-temurin:17-jdk
 
-WORKDIR /app
+WORKDIR /javalin
 
 # Copia tudo do projeto para dentro do container
 COPY . .
