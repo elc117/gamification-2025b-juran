@@ -5,6 +5,8 @@ WORKDIR /app
 # Copia tudo do projeto para dentro do container
 COPY . .
 
+RUN chmod +x gradle
+
 # Build sem rodar testes
 RUN gradle clean build -x test
 
