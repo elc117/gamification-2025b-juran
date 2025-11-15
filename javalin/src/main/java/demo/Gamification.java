@@ -81,7 +81,6 @@ public class Gamification {
             } catch (Exception e) {
                 ctx.status(404);
             }
-        });
     }
 
     private static void initDatabase() {
