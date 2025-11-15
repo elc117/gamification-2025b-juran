@@ -6,12 +6,12 @@ WORKDIR /app
 COPY . .
 
 # Build sem rodar testes
-RUN ./gradlew clean build -x test
+RUN gradle clean build -x test
 
 # Render define a variável PORT
-ENV PORT=10000
+ENV PORT=3000
 
-EXPOSE 10000
+EXPOSE 3000
 
 # Inicia o JAR gerado pelo Gradle
 CMD ["sh", "-c", "java -jar build/libs/demo-javalin.jar --server.port=$PORT"]
