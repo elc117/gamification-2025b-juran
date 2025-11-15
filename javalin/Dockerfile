@@ -5,10 +5,10 @@ WORKDIR /app
 # Copia tudo do projeto para dentro do container
 COPY . .
 
-RUN chmod +x gradle
+RUN chmod +x ./gradlew
 
 # Build sem rodar testes
-RUN gradle clean build -x test
+RUN ./gradlew clean build -x test
 
 # Render define a variável PORT
 ENV PORT=3000
