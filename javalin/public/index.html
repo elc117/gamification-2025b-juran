@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamificação de Basquete</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h1 { color: #333; text-align: center; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .calendar table { width: 100%; border-collapse: collapse; }
+        .calendar th, .calendar td { border: 1px solid #ddd; padding: 10px; text-align: center; cursor: pointer; }
+        .calendar .today { background-color: #ffeb3b; font-weight: bold; }
+        .challenge { background: #e3f2fd; }
+        .court { text-align: center; }
+        canvas { border: 2px solid #333; background: #8bc34a; width: 600px; height: 400px; }
+        button { padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #1976d2; }
+        .error { color: red; }
+        .success { color: green; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        #calendar-btn { position: fixed; top: 10px; right: 10px; z-index: 1000; font-size: 24px; background: none; border: none; cursor: pointer; }
+        #calendar-section { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #333; padding: 20px; z-index: 1001; max-width: 600px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    </style>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Botão do Calendário no Canto Superior Direito -->
+    <button id="calendar-btn">📅</button>
+
+    <!-- Calendário e Desafio (oculto por padrão, aparece como popup) -->
+    <div class="section" id="calendar-section" style="display: none;">
+        <h2>Calendário de Desafios</h2>
+        <table id="calendar-table"></table>
+        
+        <!-- Desafio do Dia dentro do popup -->
+        <div class="challenge" style="margin-top: 20px;">
+            <h3 id="challenge-title">Desafio do Dia</h3>
+            <p id="challenge-text">Carregando...</p>
+            <button id="concluir-btn" style="display: none;">Concluído</button>
+            <p id="challenge-message"></p>
+        </div>
+        
+        <button onclick="hideCalendar()" style="margin-top: 10px;">Fechar</button>
+    </div>
+
+    <div class="container">
+        <h1>Gamificação de Basquete</h1>
+        
+        <!-- Quadra -->
+        <div class="section court">
+            <h2>Quadra de Basquete</h2>
+            <canvas id="court-canvas" width="355" height="289"></canvas>
+            <br>
+            <button onclick="loadRandomPoint()">Gerar Ponto Aleatório</button>
+            <button onclick="loadSequenciaHabilidades()">Gerar Sequência de Habilidades</button>
+            <p id="point-info">Clique para gerar um ponto na quadra!</p>
+        </div>
+        
+        <!-- Status do Usuário -->
+        <div class="section">
+            <h2>Seu Status</h2>
+            <p id="user-status">Carregando...</p>
+        </div>
+        
+        <!-- Treinos -->
+        <div class="section">
+            <h2>Gerenciar Treinos</h2>
+            <h3>Adicionar Treino</h3>
+            <form id="treino-form">
+                <select id="tipo" required>
+                    <option value="">Selecione Tipo</option>
+                    <option value="arremesso">Arremesso</option>
+                    <option value="corrida">Corrida</option>
+                    <option value="saltos">Saltos</option>
+                    <option value="abdominais">Abdominais</option>
+                </select>
+                <input type="number" id="quantidade" placeholder="Quantidade" min="1" required>
+                <input type="date" id="data" required>
+                <button type="submit">Adicionar Treino</button>
+            </form>
+            <p id="form-message"></p>
+            
+            <h3>Lista de Treinos</h3>
+            <table id="treinos-table">
+                <thead>
+                    <tr><th>ID</th><th>Tipo</th><th>Quantidade</th><th>Data</th><th>Ações</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <!-- Estatísticas -->
+        <div class="section">
+            <h2>Estatísticas</h2>
+            <div>
+                <label><input type="checkbox" value="arremesso" checked> Arremesso</label>
+                <label><input type="checkbox" value="corrida" checked> Corrida</label>
+                <label><input type="checkbox" value="saltos"> Saltos</label>
+                <label><input type="checkbox" value="abdominais"> Abdominais</label>
+            </div>
+            <canvas id="stats-chart" width="600" height="300"></canvas>
+            <p id="stats-text">Carregando...</p>
+        </div>
+    </div>
+            <script>
+        const API_BASE = window.location.origin;
+        // Correção: Usar data local do navegador para evitar fuso horário
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        let currentChallengeDate = `${year}-${month}-${day}`;  // Data local correta (ex.: 2023-10-14)
+
+        // Carregar Desafio para uma Data Específica
+        async function loadChallengeForDate(date) {
+            try {
+                const response = await fetch(`${API_BASE}/desafios/diario?date=${date}`);
+                const data = await response.json();
+                document.getElementById('challenge-title').textContent = `Desafio de ${data.data}`;
+                document.getElementById('challenge-text').textContent = data.desafio;
+                
+                const isToday = date === currentChallengeDate;
+                const concluido = localStorage.getItem(`desafio-${date}`) === 'concluido';
+                const btn = document.getElementById('concluir-btn');
+                if (isToday && !concluido) {
+                    btn.style.display = 'inline-block';
+                    btn.onclick = () => concluirDesafio(date);
+                } else {
+                    btn.style.display = 'none';
+                }
+                document.getElementById('challenge-message').textContent = concluido ? 'Desafio já concluído!' : '';
+            } catch (error) {
+                document.getElementById('challenge-text').textContent = 'Erro ao carregar desafio.';
+            }
+        }
+
+        // Carregar Desafio Diário (padrão para hoje)
+        async function loadChallenge() {
+            await loadChallengeForDate(currentChallengeDate);
+        }
+
+        // Gerar Calendário (com cliques e checkmarks)
+        function generateCalendar() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const today = now.getDate();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let table = '<tr><th>Dom</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th>Sáb</th></tr><tr>';
+            for (let i = 0; i < firstDay; i++) {
+                table += '<td></td>';
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = day === today;
+                const className = isToday ? 'today' : '';
+                const checkmark = localStorage.getItem(`desafio-${dateStr}`) === 'concluido' ? ' ✓' : '';
+                table += `<td class="${className}" onclick="loadChallengeForDate('${dateStr}')">${day}${checkmark}</td>`;
+                if ((firstDay + day) % 7 === 0) table += '</tr><tr>';
+            }
+            table += '</tr>';
+            document.getElementById('calendar-table').innerHTML = table;
+        }
+
+        // Toggle Calendário (abrir/fechar ao clicar no ícone)
+        function toggleCalendar() {
+            const section = document.getElementById('calendar-section');
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                loadChallenge();  // Carregar desafio ao abrir
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // Esconder Calendário (para o botão Fechar)
+        function hideCalendar() {
+            document.getElementById('calendar-section').style.display = 'none';
+        }
+
+        // Event listener para o botão (toggle)
+        document.getElementById('calendar-btn').addEventListener('click', toggleCalendar);
+
+        // Concluir Desafio
+        async function concluirDesafio(date) {
+            try {
+                const response = await fetch(`${API_BASE}/desafios/concluir?date=${date}`, { method: 'POST' });
+                const result = await response.text();
+                document.getElementById('challenge-message').textContent = result;
+                localStorage.setItem(`desafio-${date}`, 'concluido');
+                generateCalendar();
+                loadTreinos();
+                loadUserStatus();
+                loadStats();
+                document.getElementById('concluir-btn').style.display = 'none';
+            } catch (error) {
+                document.getElementById('challenge-message').textContent = 'Erro ao concluir desafio.';
+            }
+        }
+
+        // Carregar Status do Usuário
+        async function loadUserStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/usuario`);
+                const data = await response.json();
+                let statusText = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
+                
+                if (data.conquistas && data.conquistas.length > 0) {
+                    statusText += '<br><strong>Conquistas:</strong><ul>';
+                    data.conquistas.forEach(conquista => {
+                        const icon = conquista.desbloqueada ? '✅' : '❌';
+                        const style = conquista.desbloqueada ? 'color: green;' : 'color: gray;';
+                        statusText += `<li style="${style}">${icon} <strong>${conquista.nome}</strong>: ${conquista.descricao}</li>`;
+                    });
+                    statusText += '</ul>';
+                }
+                
+                document.getElementById('user-status').innerHTML = statusText;
+            } catch (error) {
+                document.getElementById('user-status').textContent = 'Erro ao carregar status.';
+            }
+        }
+
+        // Desenhar Ponto na Quadra
+        function drawCourt(x = null, y = null) {
+            const canvas = document.getElementById('court-canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.src = '/assets/meia_quadraB.jpg';  // Manter meia_quadraB.jpg para ponto aleatório
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                if (x !== null && y !== null) {
+                    // Círculo branco
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 15, 0, 2 * Math.PI);
+                    ctx.fill();
+                    // Borda preta
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    document.getElementById('point-info').textContent = `Ponto Aleatório: 1 (${x}, ${y}) - Tente acertar a cesta!`;
+                }
+            };
+            img.onerror = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillText('Erro ao carregar imagem da quadra.', 10, 50);
+            };
+        }
+
+        // Carregar Ponto Aleatório
+        async function loadRandomPoint() {
+            try {
+                const response = await fetch(`${API_BASE}/quadra/ponto-aleatorio`);
+                const data = await response.json();
+                drawCourt(data.x, data.y);
+            } catch (error) {
+                document.getElementById('point-info').textContent = 'Erro ao gerar ponto.';
+            }
+        }
+
+        // Carregar Sequência de Habilidades
+        async function loadSequenciaHabilidades() {
+            try {
+                const response = await fetch(`${API_BASE}/quadra/sequencia-habilidades`);
+                const pontos = await response.json();
+                drawCourtWithSequencia(pontos);
+            } catch (error) {
+                document.getElementById('point-info').textContent = 'Erro ao gerar sequência.';
+            }
+        }
+
+        // Desenhar Quadra com Sequência (usando quadra.jpg)
+        function drawCourtWithSequencia(pontos = []) {
+            const canvas = document.getElementById('court-canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.src = '/assets/quadra.jpg';  // Usar quadra.jpg para habilidades
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                if (pontos.length === 3) {
+                    // Desenhar pontos numerados
+                    pontos.forEach((ponto, index) => {
+                        const numero = index + 1;
+                        // Círculo branco
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(ponto.x, ponto.y, 15, 0, 2 * Math.PI);
+                        ctx.fill();
+                        // Borda preta
+                        ctx.strokeStyle = 'black';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        // Número
+                        ctx.fillStyle = 'black';
+                        ctx.font = '16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(numero, ponto.x, ponto.y + 5);
+                    });
+                    
+                    // Desenhar setas: 1 → 2 → 3
+                    drawArrow(ctx, pontos[0].x, pontos[0].y, pontos[1].x, pontos[1].y);
+                    drawArrow(ctx, pontos[1].x, pontos[1].y, pontos[2].x, pontos[2].y);
+                    
+                    document.getElementById('point-info').textContent = `Sequência: 1 (${pontos[0].x}, ${pontos[0].y}) → 2 (${pontos[1].x}, ${pontos[1].y}) → 3 (${pontos[2].x}, ${pontos[2].y})`;
+                }
+            };
+            img.onerror = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillText('Erro ao carregar imagem da quadra.', 10, 50);
+            };
+        }
+
+        // Função auxiliar para desenhar seta
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headlen = 10; // Comprimento da ponta da seta
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            // Linha principal
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            
+            // Ponta da seta (triângulo)
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = 'red';
+            ctx.fill();
+        }
+
+        // Carregar Treinos
+        async function loadTreinos() {
+            try {
+                const response = await fetch(`${API_BASE}/treinos`);
+                const treinos = await response.json();
+                const tbody = document.querySelector('#treinos-table tbody');
+                tbody.innerHTML = '';
+                treinos.forEach(treino => {
+                    const row = `<tr>
+                        <td>${treino.id}</td>
+                        <td>${treino.tipo}</td>
+                        <td>${treino.quantidade}</td>
+                        <td>${treino.data}</td>
+                        <td>
+                            <button onclick="editTreino(${treino.id})">Editar</button>
+                            <button onclick="deleteTreino(${treino.id})">Deletar</button>
+                        </td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar treinos:', error);
+            }
+        }
+
+        // Adicionar Treino
+        document.getElementById('treino-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tipo = document.getElementById('tipo').value;
+            const quantidade = document.getElementById('quantidade').value;
+            const data = document.getElementById('data').value;
+            try {
+                const response = await fetch(`${API_BASE}/treinos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo, quantidade: parseInt(quantidade), data })
+                });
+                const result = await response.text();
+                document.getElementById('form-message').textContent = result;
+                document.getElementById('form-message').className = response.ok ? 'success' : 'error';
+                loadTreinos();
+                loadUserStatus();
+                loadStats();
+            } catch (error) {
+                document.getElementById('form-message').textContent = 'Erro ao adicionar treino.';
+                document.getElementById('form-message').className = 'error';
+            }
+        });
+
+        // Editar Treino (simples)
+        function editTreino(id) {
+            alert(`Editar treino ${id} - Implemente modal para edição avançada.`);
+        }
+
+        // Deletar Treino
+        async function deleteTreino(id) {
+            if (confirm('Deletar treino?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/treinos/${id}`, { method: 'DELETE' });
+                    const result = await response.text();
+                    alert(result);
+                    loadTreinos();
+                    loadUserStatus();
+                    loadStats();
+                } catch (error) {
+                    alert('Erro ao deletar treino.');
+                }
+            }
+        }
+
+        let statsData = {};
+        let chartInstance = null;
+
+        // Carregar Estatísticas e Gráfico
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/estatisticas`);
+                statsData = await response.json();
+                updateChart();
+                updateStatsText();
+            } catch (error) {
+                document.getElementById('stats-text').textContent = 'Erro ao carregar estatísticas.';
+            }
+        }
+
+        // Atualizar Texto das Estatísticas
+        function updateStatsText() {
+            let text = '';
+            for (const [tipo, entries] of Object.entries(statsData)) {
+                text += `${tipo}: `;
+                entries.forEach(entry => {
+                    text += `${entry.quantidade} em ${entry.data}, `;
+                });
+                text = text.slice(0, -2) + '; ';
+            }
+            document.getElementById('stats-text').textContent = text || 'Nenhum dado disponível.';
+        }
+
+        // Atualizar Gráfico com Filtros
+        function updateChart() {
+            const selectedTypes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            const datasets = [];
+            const allDates = new Set();
+
+            Object.values(statsData).forEach(entries => entries.forEach(entry => allDates.add(entry.data)));
+            const sortedDates = Array.from(allDates).sort();
+
+            selectedTypes.forEach(tipo => {
+                if (statsData[tipo]) {
+                    const dataMap = {};
+                    statsData[tipo].forEach(entry => dataMap[entry.data] = entry.quantidade);
+                    const data = sortedDates.map(date => dataMap[date] || 0);
+                    datasets.push({
+                        label: tipo.charAt(0).toUpperCase() + tipo.slice(1),
+                        data: data,
+                        borderColor: getRandomColor(),
+                        fill: false
+                    });
+                }
+            });
+
+            if (chartInstance) chartInstance.destroy();
+
+            const ctx = document.getElementById('stats-chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Função auxiliar para cores aleatórias
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Adicionar event listeners para checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', updateChart);
+        });
+
+        // Inicializar
+        window.onload = function() {
+            generateCalendar();
+            loadChallenge();
+            loadUserStatus();
+            drawCourt();
+            loadTreinos();
+            loadStats();
+        };
+    </script>
+</body>
+</html>

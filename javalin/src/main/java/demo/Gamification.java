@@ -48,7 +48,8 @@ public class Gamification {
 
         app.get("/", ctx -> {
             try {
-                String html = new String(Files.readAllBytes(Paths.get("src/main/resources/public/index.html")));
+                //String html = new String(Files.readAllBytes(Paths.get("src/main/resources/public/index.html")));
+                String html = new String(Files.readAllBytes(Paths.get("public/index.html")));
                 ctx.html(html);
             } catch (Exception e) {
                 ctx.status(500).result("Erro ao carregar index.html: " + e.getMessage());
@@ -74,7 +75,8 @@ public class Gamification {
         app.get("/assets/*", ctx -> {
             String path = ctx.path().substring(1);
             try {
-                byte[] bytes = Files.readAllBytes(Paths.get("src/main/resources/public/" + path));
+                //byte[] bytes = Files.readAllBytes(Paths.get("src/main/resources/public/" + path));
+                byte[] bytes = Files.readAllBytes(Paths.get("public/" + path));
                 ctx.result(bytes).contentType("image/jpeg");
             } catch (Exception e) {
                 ctx.status(404);
