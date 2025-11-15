@@ -16,7 +16,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-
 public class Gamification {
 
     private static final String DB_URL = "jdbc:sqlite:treinos.db";
@@ -60,6 +59,15 @@ public class Gamification {
         app.get("/usuario", Gamification::getUsuarioStatus);
         app.get("/desafios/diario", Gamification::getDesafioDiario);
         app.get("/quadra/ponto-aleatorio", Gamification::getPontoAleatorio);
+        app.get("/assets/*", ctx -> {
+            String path = ctx.path().substring(1);  // Remove a barra inicial
+            try {
+                byte[] bytes = Files.readAllBytes(Paths.get("src/main/resources/public/" + path));
+                ctx.result(bytes).contentType("image/jpeg");  // Ajuste o tipo MIME se necessário
+            } catch (Exception e) {
+                ctx.status(404);
+            }
+        });
     }
 
     private static void initDatabase() {
@@ -196,11 +204,13 @@ public class Gamification {
     }
 
     private static void getPontoAleatorio(Context ctx) {
-        int x = ThreadLocalRandom.current().nextInt(0, 400);  // Largura da quadra (pixels)
-        int y = ThreadLocalRandom.current().nextInt(0, 300);  // Altura da quadra (pixels)
+        // Gera um ponto aleatório na quadra (assumindo dimensões 600x400, como no canvas)
+        int x = ThreadLocalRandom.current().nextInt(0, 355);
+        int y = ThreadLocalRandom.current().nextInt(0, 289);
         ctx.json(Map.of("x", x, "y", y));
     }
 
+    // Classe auxiliar para Treino
     public static class Treino {
         private int id;
         private String tipo;
@@ -208,6 +218,7 @@ public class Gamification {
         private String data;
 
         public Treino() {}
+
         public Treino(int id, String tipo, int quantidade, String data) {
             this.id = id;
             this.tipo = tipo;
@@ -215,7 +226,6 @@ public class Gamification {
             this.data = data;
         }
 
-        // Getters e setters
         public int getId() { return id; }
         public void setId(int id) { this.id = id; }
         public String getTipo() { return tipo; }
@@ -226,6 +236,7 @@ public class Gamification {
         public void setData(String data) { this.data = data; }
     }
 
+    // Classe auxiliar para UsuarioStatus
     public static class UsuarioStatus {
         private int pontos;
         private String status;
@@ -236,6 +247,8 @@ public class Gamification {
         }
 
         public int getPontos() { return pontos; }
+        public void setPontos(int pontos) { this.pontos = pontos; }
         public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
     }
 }

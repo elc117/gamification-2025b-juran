@@ -14,7 +14,7 @@
         .calendar .today { background-color: #ffeb3b; font-weight: bold; }
         .challenge { margin: 20px 0; padding: 10px; background: #e3f2fd; border-radius: 5px; }
         .court { margin: 20px 0; text-align: center; }
-        canvas { border: 2px solid #333; background: #8bc34a; }
+        canvas { border: 2px solid #333; background: #8bc34a; width: 600px; height: 400px; }
         button { padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
         button:hover { background: #1976d2; }
     </style>
@@ -40,7 +40,7 @@
         <!-- Quadra -->
         <div class="court">
             <h2>Quadra de Basquete</h2>
-            <canvas id="court-canvas" width="400" height="300"></canvas>
+            <canvas id="court-canvas" width="355" height="289"></canvas>
             <br>
             <button onclick="loadRandomPoint()">Gerar Ponto Aleatório</button>
             <p id="point-info">Clique para gerar um ponto na quadra!</p>
@@ -100,35 +100,49 @@
             document.getElementById('calendar-table').innerHTML = table;
         }
 
-        // Desenhar Quadra e Ponto Aleatório
+        // Desenhar Quadra com Imagem e Ponto Aleatório
         function drawCourt(x = null, y = null) {
             const canvas = document.getElementById('court-canvas');
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Desenhar linhas básicas da quadra (metade)
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(50, 50); // Cesta esquerda
-            ctx.lineTo(50, 250);
-            ctx.moveTo(350, 50); // Cesta direita
-            ctx.lineTo(350, 250);
-            ctx.stroke();
-            
-            // Desenhar cesta (arco simples)
-            ctx.beginPath();
-            ctx.arc(200, 50, 30, 0, Math.PI, true);
-            ctx.stroke();
-            
-            // Marcar ponto aleatório
-            if (x !== null && y !== null) {
-                ctx.fillStyle = 'red';
-                ctx.beginPath();
-                ctx.arc(x, y, 10, 0, 2 * Math.PI);
-                ctx.fill();
-                document.getElementById('point-info').textContent = `Ponto: (${x}, ${y}) - Tente acertar a cesta!`;
+            const img = new Image();
+            img.src = '/assets/meia_quadraB.jpg';  // Usar a imagem da quadra
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);  // Desenhar imagem como fundo
+                
+                // Marcar ponto aleatório sobre a imagem
+                if (x !== null && y !== null) {
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                    ctx.fill();
+                    document.getElementById('point-info').textContent = `Ponto: (${x}, ${y}) - Tente acertar a cesta!`;
+                }
+            };
+            img.onerror = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillText('Erro ao carregar imagem da quadra.', 10, 50);
+            };
+        }
+
+        // Carregar Ponto Aleatório
+        async function loadRandomPoint() {
+            try {
+                const response = await fetch(`${API_BASE}/quadra/ponto-aleatorio`);
+                const data = await response.json();
+                drawCourt(data.x, data.y);
+            } catch (error) {
+                document.getElementById('point-info').textContent = 'Erro ao gerar ponto.';
             }
         }
 
-        // Car
+        // Inicializar
+        window.onload = function() {
+            generateCalendar();
+            loadChallenge();
+            loadUserStatus();
+            drawCourt();  // Desenhar quadra inicial sem ponto
+        };
+    </script>
+</body>
+</html>
