@@ -211,27 +211,44 @@
             try {
                 const response = await fetch(`${API_BASE}/usuario`);
                 const data = await response.json();
-                document.getElementById('user-status').textContent = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
+                let statusText = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
+                
+                if (data.conquistas && data.conquistas.length > 0) {
+                    statusText += '<br><strong>Conquistas:</strong><ul>';
+                    data.conquistas.forEach(conquista => {
+                        const icon = conquista.desbloqueada ? '✅' : '❌';
+                        const style = conquista.desbloqueada ? 'color: green;' : 'color: gray;';
+                        statusText += `<li style="${style}">${icon} <strong>${conquista.nome}</strong>: ${conquista.descricao}</li>`;
+                    });
+                    statusText += '</ul>';
+                }
+                
+                document.getElementById('user-status').innerHTML = statusText;
             } catch (error) {
                 document.getElementById('user-status').textContent = 'Erro ao carregar status.';
             }
         }
 
-        // Desenhar Quadra
+        // Desenhar Ponto na Quadra
         function drawCourt(x = null, y = null) {
             const canvas = document.getElementById('court-canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
-            img.src = '/assets/meia_quadraB.jpg';
+            img.src = '/assets/meia_quadraB.jpg';  // Manter meia_quadraB.jpg para ponto aleatório
             img.onload = function() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 if (x !== null && y !== null) {
-                    ctx.fillStyle = 'red';
+                    // Círculo branco
+                    ctx.fillStyle = 'white';
                     ctx.beginPath();
-                    ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                    ctx.arc(x, y, 15, 0, 2 * Math.PI);
                     ctx.fill();
-                    document.getElementById('point-info').textContent = `Ponto: (${x}, ${y}) - Tente acertar a cesta!`;
+                    // Borda preta
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    document.getElementById('point-info').textContent = `Ponto Aleatório: 1 (${x}, ${y}) - Tente acertar a cesta!`;
                 }
             };
             img.onerror = function() {

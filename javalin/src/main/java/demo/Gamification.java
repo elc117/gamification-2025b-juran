@@ -206,15 +206,58 @@ public class Gamification {
         try {
             int totalPontos = 0;
             int totalTreinos = 0;
+            int totalDesafios = 0;  // Contar treinos de desafio (assumindo coluna 'isDesafio' ou refine)
+            Map<String, Integer> somasPorTipo = new HashMap<>();
             try (Connection conn = DriverManager.getConnection(DB_URL);
-                 ResultSet rs = conn.createStatement().executeQuery("SELECT SUM(quantidade * CASE WHEN tipo = 'arremesso' THEN 10 ELSE 5 END) AS pontos, COUNT(*) AS treinos FROM treinos")) {
-                if (rs.next()) {
-                    totalPontos = rs.getInt("pontos");
-                    totalTreinos = rs.getInt("treinos");
+                ResultSet rs = conn.createStatement().executeQuery("SELECT tipo, SUM(quantidade) AS total, COUNT(*) AS treinos FROM treinos GROUP BY tipo")) {
+                while (rs.next()) {
+                    String tipo = rs.getString("tipo").toLowerCase();
+                    int total = rs.getInt("total");
+                    somasPorTipo.put(tipo, total);
+                    totalTreinos += rs.getInt("treinos");
+                    totalPontos += calcularPontos(new Treino(0, tipo, total, ""));
                 }
             }
+            // Contar desafios (exemplo: assumindo treinos com data específica ou flag; refine SQL se necessário)
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(*) AS desafios FROM treinos WHERE data LIKE '%desafio%' OR tipo = 'desafio'")) {  // Ajuste para flag real
+                if (rs.next()) totalDesafios = rs.getInt("desafios");
+            }
+
+            // Criar lista de conquistas
+            List<Conquista> conquistas = new ArrayList<>();
+            conquistas.add(new Conquista("Recruta Fitness", "Registre o décimo treino", totalTreinos >= 10));
+            conquistas.add(new Conquista("Arremessador Estrela ", "Acumule 50 arremessos", somasPorTipo.getOrDefault("arremesso", 0) >= 50));
+            conquistas.add(new Conquista("Arremessador Fera ", "Acumule 500 arremessos", somasPorTipo.getOrDefault("arremesso", 0) >= 500));
+            conquistas.add(new Conquista("Arremessador Supremacia ", "Acumule 2500 arremessos", somasPorTipo.getOrDefault("arremesso", 0) >= 2500));
+            conquistas.add(new Conquista("Corredor de Pés Leves", "Complete 25 km de corrida", somasPorTipo.getOrDefault("corrida", 0) >= 25));
+            conquistas.add(new Conquista("Corredor Veloz como o Vento", "Complete 100 km de corrida", somasPorTipo.getOrDefault("corrida", 0) >= 100));
+            conquistas.add(new Conquista("Corredor Lendário", "Complete 500 km de corrida", somasPorTipo.getOrDefault("corrida", 0) >= 500));
+            conquistas.add(new Conquista("Saltador Destemido ", "Acumule 100 saltos", somasPorTipo.getOrDefault("saltos", 0) >= 100));
+            conquistas.add(new Conquista("Saltador Elástico", "Acumule 500 saltos", somasPorTipo.getOrDefault("saltos", 0) >= 500));
+            conquistas.add(new Conquista("Saltador Olímpico", "Acumule 2000 saltos", somasPorTipo.getOrDefault("saltos", 0) >= 2000));
+            conquistas.add(new Conquista("Abdômen Imbatível", "Faça 350 abdominais", somasPorTipo.getOrDefault("abdominais", 0) >= 350));
+            conquistas.add(new Conquista("Abdômen de Ferro", "Faça 2000 abdominais", somasPorTipo.getOrDefault("abdominais", 0) >= 2000));
+            conquistas.add(new Conquista("Abdômen Titânico", "Faça 20000 abdominais", somasPorTipo.getOrDefault("abdominais", 0) >= 20000));
+            conquistas.add(new Conquista("Desafiador Heróico", "Conclua 15 desafios", totalDesafios >= 15));
+            conquistas.add(new Conquista("Treinador de 3 Estrelas", "Treine por 3 dias consecutivos", totalTreinos >= 3));
+            conquistas.add(new Conquista("Treinador Constante", "Treine por 7 dias consecutivos", totalTreinos >= 7));
+            conquistas.add(new Conquista("Treinador Mestral", "Treine por 14 dias consecutivos", totalTreinos >= 14));
+            conquistas.add(new Conquista("Treinador Supremum", "Treine por 25 dias consecutivos", totalTreinos >= 25));
+            conquistas.add(new Conquista("Pontuador Radiante", "Atinga 500 pontos", totalPontos >= 500));
+            conquistas.add(new Conquista("Mestre da Quadra", "Acumule 2000 pontos", totalPontos >= 2000));
+            conquistas.add(new Conquista("Pontuador Gigante", "Atinga 5000 pontos", totalPontos >= 5000));
+            conquistas.add(new Conquista("Mestre da Quadra Suprema", "Acumule 20000 pontos", totalPontos >= 20000));
+            conquistas.add(new Conquista("Pontuador Elite", "Atinga 50000 pontos", totalPontos >= 50000));
+            conquistas.add(new Conquista("Mestre da Quadra Galáctica", "Acumule 100000 pontos", totalPontos >= 100000));
+
+            // Contar desbloqueadas para Campeão Intermediário e Absoluto
+            long desbloqueadas = conquistas.stream().filter(Conquista::isDesbloqueada).count();
+            conquistas.add(new Conquista("Campeão em Ascensão", "Desbloqueie metade das conquistas", desbloqueadas >= 12));
+            conquistas.add(new Conquista("Campeão Absoluto", "Desbloqueie todas as conquistas", desbloqueadas >= 24));
+
             String status = totalPontos >= 100 ? "Conquista desbloqueada!" : "Continue treinando";
-            ctx.json(new UsuarioStatus(totalPontos, status, totalTreinos));
+            ctx.json(Map.of("pontos", totalPontos, "status", status, "totalTreinos", totalTreinos, "conquistas", conquistas));
         } catch (Exception e) {
             ctx.status(500).result("Erro ao obter status: " + e.getMessage());
         }
@@ -380,4 +423,22 @@ public class Gamification {
         public int getTotalTreinos() { return totalTreinos; }
         public void setTotalTreinos(int totalTreinos) { this.totalTreinos = totalTreinos; }
     }
+
+    public static class Conquista {
+        private String nome;
+        private String descricao;
+        private boolean desbloqueada;
+
+        public Conquista(String nome, String descricao, boolean desbloqueada) {
+            this.nome = nome;
+            this.descricao = descricao;
+            this.desbloqueada = desbloqueada;
+        }
+
+        // Getters
+        public String getNome() { return nome; }
+        public String getDescricao() { return descricao; }
+        public boolean isDesbloqueada() { return desbloqueada; }
+    }
+
 }

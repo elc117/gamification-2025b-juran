@@ -211,7 +211,19 @@
             try {
                 const response = await fetch(`${API_BASE}/usuario`);
                 const data = await response.json();
-                document.getElementById('user-status').textContent = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
+                let statusText = `Pontos: ${data.pontos} - ${data.status} - Total Treinos: ${data.totalTreinos}`;
+                
+                if (data.conquistas && data.conquistas.length > 0) {
+                    statusText += '<br><strong>Conquistas:</strong><ul>';
+                    data.conquistas.forEach(conquista => {
+                        const icon = conquista.desbloqueada ? '✅' : '❌';
+                        const style = conquista.desbloqueada ? 'color: green;' : 'color: gray;';
+                        statusText += `<li style="${style}">${icon} <strong>${conquista.nome}</strong>: ${conquista.descricao}</li>`;
+                    });
+                    statusText += '</ul>';
+                }
+                
+                document.getElementById('user-status').innerHTML = statusText;
             } catch (error) {
                 document.getElementById('user-status').textContent = 'Erro ao carregar status.';
             }
