@@ -1,11 +1,11 @@
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
 # Copiar arquivos do projeto
 COPY . .
 
-# Instalar SQLite (necessário para o banco)
+# Instalar SQLite
 RUN apt-get update && apt-get install -y sqlite3
 
 # Dar permissão ao gradlew
@@ -17,7 +17,7 @@ RUN ./gradlew shadowJar
 # Criar diretório para dados do SQLite
 RUN mkdir -p /var/data
 
-# Expor a porta que o Render usa
+# Expor a porta
 EXPOSE 10000
 
 # Comando de inicialização
