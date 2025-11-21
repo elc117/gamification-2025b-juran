@@ -15,13 +15,17 @@ RUN wget https://services.gradle.org/distributions/gradle-8.5-bin.zip -O /tmp/gr
     rm /tmp/gradle.zip
 
 # Fazer build usando Gradle instalado
-RUN gradle build
+RUN gradle shadowJar
 
 # Criar diretório para dados do SQLite
 RUN mkdir -p /var/data
 
+# Debug: verificar qual JAR foi gerado
+RUN echo "=== JARs gerados ==="
+RUN ls -la build/libs/
+
 # Expor a porta
 EXPOSE 10000
 
-# Comando de inicialização
-CMD ["java", "-jar", "build/libs/demo-javalin.jar"]
+# Comando de inicialização - use o shadowJar
+CMD ["java", "-jar", "build/libs/gamification.jar"]
