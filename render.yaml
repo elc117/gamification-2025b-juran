@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: gamification-basquete
+    env: java
+    buildCommand: ./gradlew build
+    startCommand: java -jar build/libs/demo-javalin.jar
+    envVars:
+      - key: PORT
+        value: 10000
