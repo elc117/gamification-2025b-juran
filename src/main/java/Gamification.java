@@ -142,7 +142,7 @@ public class Gamification {
                 ResultSet rs = stmt.getGeneratedKeys();
                 if (rs.next()) {
                     int id = rs.getInt(1);
-                    ctx.result("Treino created with id " + id + ". Pontos ganhos: " + pontos);
+                    ctx.result("Treino criado. Pontos ganhos: " + pontos);
                 }
             }
         } catch (Exception e) {
