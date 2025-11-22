@@ -14,7 +14,14 @@
         .calendar .today { background-color: #ffeb3b; font-weight: bold; }
         .challenge { background: #e3f2fd; }
         .court { text-align: center; }
-        canvas { border: 2px solid #333; background: #8bc34a; width: 600px; height: 400px; }
+        canvas { 
+            border: 1px solid #ddd; 
+            background: white; 
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 600px; 
+            height: 400px; 
+        }
         button { padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
         button:hover { background: #1976d2; }
         .error { color: red; }
@@ -110,7 +117,7 @@
     </div>
             <script>
         const API_BASE = window.location.origin;
-        // Correção: Usar data local do navegador para evitar fuso horário
+        // Usar data local do navegador para evitar fuso horário
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -248,7 +255,7 @@
                     ctx.strokeStyle = 'black';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-                    document.getElementById('point-info').textContent = `Ponto Aleatório: 1 (${x}, ${y}) - Tente acertar a cesta!`;
+                    document.getElementById('point-info').textContent = `Tente acertar a cesta!`;
                 }
             };
             img.onerror = function() {
@@ -313,7 +320,7 @@
                     drawArrow(ctx, pontos[0].x, pontos[0].y, pontos[1].x, pontos[1].y);
                     drawArrow(ctx, pontos[1].x, pontos[1].y, pontos[2].x, pontos[2].y);
                     
-                    document.getElementById('point-info').textContent = `Sequência: 1 (${pontos[0].x}, ${pontos[0].y}) → 2 (${pontos[1].x}, ${pontos[1].y}) → 3 (${pontos[2].x}, ${pontos[2].y})`;
+                    document.getElementById('point-info').textContent = `Percorra o caminho e arremesse/faça bandeja`;
                 }
             };
             img.onerror = function() {
@@ -432,15 +439,52 @@
 
         // Atualizar Texto das Estatísticas
         function updateStatsText() {
-            let text = '';
+            let html = '';
+            let hasData = false;
+            let totais = {};
+            
+            // Calcular totais por tipo
             for (const [tipo, entries] of Object.entries(statsData)) {
-                text += `${tipo}: `;
-                entries.forEach(entry => {
-                    text += `${entry.quantidade} em ${entry.data}, `;
-                });
-                text = text.slice(0, -2) + '; ';
+                if (entries && entries.length > 0) {
+                    hasData = true;
+                    totais[tipo] = entries.reduce((sum, entry) => sum + entry.quantidade, 0);
+                }
             }
-            document.getElementById('stats-text').textContent = text || 'Nenhum dado disponível.';
+            
+            if (hasData) {
+                html = '<div class="stats-totals">';
+                html += '<h4>📊 Totais de Treinos</h4>';
+                
+                for (const [tipo, total] of Object.entries(totais)) {
+                    const tipoFormatado = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                    const icon = getIconForType(tipo);
+                    
+                    html += `
+                        <div class="stat-item">
+                            <span class="stat-icon">${icon}</span>
+                            <span class="stat-type">${tipoFormatado}:</span>
+                            <span class="stat-total">${total}</span>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            } else {
+                html = '<p class="no-data">Nenhum dado de treino disponível.</p>';
+            }
+            
+            document.getElementById('stats-text').innerHTML = html;
+        }
+
+        // Função auxiliar para ícones
+        function getIconForType(tipo) {
+            const icons = {
+                'arremesso': '🏀',
+                'corrida': '🏃‍♂️',
+                'saltos': '🦘',
+                'abdominais': '💪'
+            };
+            return icons[tipo] || '📝';
         }
 
         // Atualizar Gráfico com Filtros
