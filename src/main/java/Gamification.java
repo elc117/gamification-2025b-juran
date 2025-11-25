@@ -299,7 +299,7 @@ public class Gamification {
             else if (i == 3) pontos += 6;
             else if (i == 4) pontos += 10;
             else if (i == 5) pontos += 15;
-            else pontos += 10;
+            else pontos = km * 5;
         }
         return pontos;
     }
@@ -448,4 +448,5 @@ public class Gamification {
         public String getDescricao() { return descricao; }
         public boolean isDesbloqueada() { return desbloqueada; }
     }
+
 }
