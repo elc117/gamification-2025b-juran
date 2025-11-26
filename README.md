@@ -28,29 +28,27 @@ níveis, conquistas e recompensas** conforme sua evolução.
 
 ## Processo de Desenvolvimento
 
-comentários sobre etapas do desenvolvimento, incluindo detalhes técnicos sobre os recursos de orientação a objetos utilizados, sobre erros/dificuldades/soluções e sobre as contribuições de cada integrante (não usar IA para gerar esses comentários!)
-
 Iniciei o projeto me baseando no exemplo SQLite fornecido, no início tentei separar em pastas DAO, Model, View e Controller, mas acabei desistindo no meio do caminho e voltei para o jeito que estava conforme o exemplo SQLite. Fiz as classes Gamification, Treino, UsuarioStatus e Conquista e fui implementando. No inicio fiz apenas a parte de CRUD de treino com as conquistas para suprir a ideia base do projeto de gamificar. Posteriormente fui agregando novas funcionalidades conforme achei interessante de se ter, tais como o desafio diario, as quadras com geração de pontos aleatórios, peguei a idea do codigo do trabalho que apresentei sobre o drop, para inserir um ponto aleatório na imagem, e por último fiz as estatísticas dos treinos.
 
 #### Detalhes técnicos
 
 Encapsulamento: 
-    As classes Treino, UsuarioStatus e Conquista usam campos privados com getters e setters públicos. Por exemplo, em Treino, os métodos getTipo() e setTipo(String tipo) encapsulam o atributo tipo, evitando modificações diretas e facilitando validações futuras.
+    As classes Treino, UsuarioStatus e Conquista usam campos privados com getters e setters públicos. Por exemplo, em Treino, os métodos getTipo() e setTipo(String tipo) encapsulam o atributo tipo.
 
 Abstração:
     A classe Treino abstrai um treino genérico, com atributos comuns (id, tipo, quantidade, data), permitindo representar diferentes tipos sem duplicação de código. Métodos como isValidTreino abstraem validações, verificando se o tipo é válido via enum e se a quantidade é positiva.
 
 Herança e Polimorfismo:
-    Embora não haja herança explícita (todas as classes são independentes), o polimorfismo é usado no método calcularPontos, que utiliza um switch baseado no enum TipoTreino para comportamentos diferenciados (pontos para corrida aumentam exponencialmente, enquanto abdominais dividem por 2).
+    Embora não haja herança explícita (todas as classes são independentes), o polimorfismo é usado no método calcularPontos, que utiliza um switch baseado no enum TipoTreino para comportamentos diferenciados.
 
 Enums:
     TipoTreino (ARREMESSO, CORRIDA, SALTOS, ABDOMINAIS) define constantes para tipos de treino, garantindo type safety e evitando strings mágicas. É usado em validações (TipoTreino.valueOf(treino.getTipo().toUpperCase())) e cálculos, promovendo consistência e reduzindo erros de digitação.
 
 Composição e Agregação:
-    A classe UsuarioStatus compõe uma lista de Conquista (via List<Conquista>), representando uma relação "tem-muitos". Isso modela o status do usuário como um agregado de conquistas, facilitando a serialização JSON para respostas da API.
+    A classe UsuarioStatus compõe uma lista de Conquista (via List<Conquista>), representando uma relação "tem-muitos". Isso modela o status do usuário como um agregado de conquistas.
 
 
-Tive problemas ao carregar as imagens, o caminho relativo não encontrava quando executava via Gradle, problemas com a versão do java e com a forma de codificar que as vezes não era compatível com a versão. Fora isso o mais complexo foi mudar o projeto pra colocar no render e no itch.io, mas fui fazendo as mudanças com o chatgpt até ter sucesso. No fim acredito que tenha partes que não sejam necessárias ter no código, devido a essa busca com o chatgpt, e muitos pontos a serem melhorados, tais como design do frontend, implementação de login, transformar os km em float e mudar a forma de calcular os pontos, fazer cards para as conquistas e um botão para mostrar elas ao invés de deixar sempre aparecendo.
+Tive problemas ao carregar as imagens, o caminho relativo não encontrava quando executava via Gradle, problemas com a versão do java e com a forma de codificar que as vezes não era compatível com a versão. Fora isso o mais complexo foi mudar o projeto pra colocar no render e no itch.io, mas fui fazendo as mudanças com o chatgpt até ter sucesso. No fim acredito que tenha partes que não sejam necessárias ter no código, devido a essa busca com o chatgpt, e muitos pontos a serem melhorados, tais como design do frontend, implementação de uma classe usuario para poder fazer login, transformar os km em float e mudar a forma de calcular os pontos, fazer cards para as conquistas e um botão para mostrar elas ao invés de deixar sempre aparecendo.
 
 ------------------------------------------------------------------------
 
@@ -78,6 +76,15 @@ cd seu-projeto
 ./gradlew build
 ./gradlew run
 ```
+ou
+
+```
+git clone https://github.com/.../seu-projeto.git
+cd seu-projeto
+powershell -Command "Invoke-WebRequest -Uri 'https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar' -OutFile 'gradle/wrapper/gradle-wrapper.jar'"
+.\gradlew.bat build
+.\gradlew.bat run
+```
 
 ### Dependências
 
@@ -103,6 +110,7 @@ Adicionar GIF ou vídeo aqui:
 -   Código do trabalho anterior (drop)\
 -   Documentação oficial SQLite JDBC, Java AWT/Swing, Gradle\
 -   Prompts utilizados (quando aplicável)
+
 
 
 
