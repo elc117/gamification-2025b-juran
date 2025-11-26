@@ -292,13 +292,12 @@ public class Gamification {
 
     private static int calcularPontosCorrida(int km) {
         if (km <= 0) return 0;
+        int pontos = 0;
         for (int i = 1; i <= km; i++) {
-            int pontos = 0;
-            if (i == 1) pontos += 1;
-            else if (i == 2) pontos += 3;
-            else if (i == 3) pontos += 6;
-            else if (i == 4) pontos += 10;
-            else if (i == 5) pontos += 15;
+            if (i == 1) pontos = 1;
+            else if (i == 2) pontos = 3;
+            else if (i == 3) pontos = 6;
+            else if (i == 4) pontos = 10;
             else pontos = (km - 2) * 5;
         }
         return pontos;
@@ -450,6 +449,7 @@ public class Gamification {
     }
 
 }
+
 
 
 
