@@ -17,11 +17,11 @@ níveis, conquistas e recompensas** conforme sua evolução.
 ### Funcionalidades planejadas:
 
 -   Registro de atividades (ex.: acertos de arremesso, quilômetros
-    corridos)\
--   Sistema de pontuação e progressão de níveis\
--   Desafios diários\
--   Exibição da evolução do usuário\
--   Inserção aleatória de alvos na quadra\
+    corridos)
+-   Sistema de pontuação e progressão de níveis
+-   Desafios diários
+-   Exibição da evolução do usuário
+-   Inserção aleatória de alvos na quadra
 -   Persistência dos dados com SQLite
 
 ------------------------------------------------------------------------
@@ -30,7 +30,7 @@ níveis, conquistas e recompensas** conforme sua evolução.
 
 comentários sobre etapas do desenvolvimento, incluindo detalhes técnicos sobre os recursos de orientação a objetos utilizados, sobre erros/dificuldades/soluções e sobre as contribuições de cada integrante (não usar IA para gerar esses comentários!)
 
-Iniciei o projeto me baseando no exemplo SQLite fornecido, no início tentei separar em pastas DAO, Model, View e Controller, mas acabei desistindo no meio do caminho e voltei para o jeito que estava conforme o exemplo SQLite. Fiz as classes Gamification, Treino, UsuarioStatus e Conquista e fui implementando. No inicio fiz apenas a parte de CRUD de treino com as conquistas para suprir a ideia base do projeto de gamificar. Posteriormente fui agregando novas funcionalidades conforme achei interessante de se ter, tais como o desafio diario, as quadras com geração de pontos aleatórios, peguei a idea do codigo do trabalho que apresentei sobre o drop, para inserir um ponto aleatório na imagem, e as estatísticas dos treinos.
+Iniciei o projeto me baseando no exemplo SQLite fornecido, no início tentei separar em pastas DAO, Model, View e Controller, mas acabei desistindo no meio do caminho e voltei para o jeito que estava conforme o exemplo SQLite. Fiz as classes Gamification, Treino, UsuarioStatus e Conquista e fui implementando. No inicio fiz apenas a parte de CRUD de treino com as conquistas para suprir a ideia base do projeto de gamificar. Posteriormente fui agregando novas funcionalidades conforme achei interessante de se ter, tais como o desafio diario, as quadras com geração de pontos aleatórios, peguei a idea do codigo do trabalho que apresentei sobre o drop, para inserir um ponto aleatório na imagem, e por último fiz as estatísticas dos treinos.
 
 #### Detalhes técnicos
 
@@ -41,10 +41,10 @@ Abstração:
     A classe Treino abstrai um treino genérico, com atributos comuns (id, tipo, quantidade, data), permitindo representar diferentes tipos sem duplicação de código. Métodos como isValidTreino abstraem validações, verificando se o tipo é válido via enum e se a quantidade é positiva.
 
 Herança e Polimorfismo:
-    Embora não haja herança explícita (todas as classes são independentes), o polimorfismo é usado no método calcularPontos, que utiliza um switch baseado no enum TipoTreino para comportamentos diferenciados (e.g., pontos para corrida aumentam exponencialmente, enquanto abdominais dividem por 2). Isso permite extensibilidade: adicionar um novo tipo de treino requer apenas uma nova entrada no enum e no switch.
+    Embora não haja herança explícita (todas as classes são independentes), o polimorfismo é usado no método calcularPontos, que utiliza um switch baseado no enum TipoTreino para comportamentos diferenciados (pontos para corrida aumentam exponencialmente, enquanto abdominais dividem por 2).
 
 Enums:
-    TipoTreino (ARREMESSO, CORRIDA, SALTOS, ABDOMINAIS) define constantes para tipos de treino, garantindo type safety e evitando strings mágicas. É usado em validações (e.g., TipoTreino.valueOf(treino.getTipo().toUpperCase())) e cálculos, promovendo consistência e reduzindo erros de digitação.
+    TipoTreino (ARREMESSO, CORRIDA, SALTOS, ABDOMINAIS) define constantes para tipos de treino, garantindo type safety e evitando strings mágicas. É usado em validações (TipoTreino.valueOf(treino.getTipo().toUpperCase())) e cálculos, promovendo consistência e reduzindo erros de digitação.
 
 Composição e Agregação:
     A classe UsuarioStatus compõe uma lista de Conquista (via List<Conquista>), representando uma relação "tem-muitos". Isso modela o status do usuário como um agregado de conquistas, facilitando a serialização JSON para respostas da API.
@@ -103,5 +103,6 @@ Adicionar GIF ou vídeo aqui:
 -   Código do trabalho anterior (drop)\
 -   Documentação oficial SQLite JDBC, Java AWT/Swing, Gradle\
 -   Prompts utilizados (quando aplicável)
+
 
 
