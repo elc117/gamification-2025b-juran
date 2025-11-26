@@ -16,13 +16,11 @@ níveis, conquistas e recompensas** conforme sua evolução.
 
 ### Funcionalidades planejadas:
 
--   Registro de atividades (ex.: acertos de arremesso, quilômetros
-    corridos)
+-   Registro de atividades
 -   Sistema de pontuação e progressão de níveis
 -   Desafios diários
 -   Exibição da evolução do usuário
 -   Inserção aleatória de alvos na quadra
--   Persistência dos dados com SQLite
 
 ------------------------------------------------------------------------
 
@@ -110,6 +108,7 @@ Adicionar GIF ou vídeo aqui:
 -   Código do trabalho anterior (drop)\
 -   Documentação oficial SQLite JDBC, Java AWT/Swing, Gradle\
 -   Prompts utilizados (quando aplicável)
+
 
 
 
