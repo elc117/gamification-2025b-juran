@@ -31,7 +31,7 @@ public class Gamification {
             DB_URL = "jdbc:sqlite:treinos.db";
         }
     }
-    // Lista de desafios atualizada
+    // Lista de desafios
     private static final List<String> DESAFIOS = List.of(
         "Corrida de 5km em menos de 30 minutos",
         "Fazer 50 abdominais",
@@ -57,7 +57,7 @@ public class Gamification {
             serveStaticFile(ctx, "assets/" + fileName, getContentType(fileName));
         });
 
-        // Inicializar banco com melhor estrutura
+        // Inicializar banco
         initDatabase();
 
         // Rotas
@@ -282,7 +282,7 @@ public class Gamification {
             return switch (tipo) {
                 case ARREMESSO -> treino.getQuantidade() * 1;
                 case CORRIDA -> calcularPontosCorrida(treino.getQuantidade());
-                case SALTOS -> treino.getQuantidade() * 4;
+                case SALTOS -> treino.getQuantidade() * 3;
                 case ABDOMINAIS -> treino.getQuantidade() / 2;
             };
         } catch (IllegalArgumentException e) {
@@ -449,6 +449,7 @@ public class Gamification {
     }
 
 }
+
 
 
 
