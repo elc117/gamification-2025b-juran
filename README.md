@@ -84,8 +84,8 @@ powershell -Command "Invoke-WebRequest -Uri 'https://github.com/gradle/gradle/ra
 
 ### Dependências
 
--   org.xerial:sqlite-jdbc\
--   java.desktop\
+-   org.xerial:sqlite-jdbc
+-   java.desktop
 -   Gradle application plugin
 
 ------------------------------------------------------------------------
@@ -107,9 +107,10 @@ Adicionar GIF ou vídeo aqui:
 -   Slides das aulas
 -   Código do trabalho anterior (drop)
 -   Documentação oficial SQLite JDBC, Java AWT/Swing, Gradle
--   https://chatgpt.com/
--   https://www.blackbox.ai/
+-   https://chatgpt.com
+-   https://www.blackbox.ai
 -   https://javalin.io/tutorials/docker
+
 
 
 
