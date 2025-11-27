@@ -97,17 +97,21 @@ powershell -Command "Invoke-WebRequest -Uri 'https://github.com/gradle/gradle/ra
 Adicionar GIF ou vídeo aqui:
 
 ``` markdown
-![Demonstração do Sistema](Video Project.mp4)
+![Video Project](https://github.com/user-attachments/assets/d8f7e40e-0332-499f-b2b1-6994da44a6f8)
+
 ```
 
 ------------------------------------------------------------------------
 
 ## Referências e Créditos
 
--   Exemplo SQLite fornecido pelo professor\
--   Código do trabalho anterior (drop)\
--   Documentação oficial SQLite JDBC, Java AWT/Swing, Gradle\
--   Prompts utilizados (quando aplicável)
+-   Exemplo SQLite fornecido pela professora
+-   Slides das aulas
+-   Código do trabalho anterior (drop)
+-   Documentação oficial SQLite JDBC, Java AWT/Swing, Gradle
+-   https://chatgpt.com/
+-   https://www.blackbox.ai/
+-   https://javalin.io/tutorials/docker
 
 
 
