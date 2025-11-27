@@ -61,24 +61,22 @@ Tive problemas ao carregar as imagens, o caminho relativo não encontrava quando
 
 ### Requisitos
 
--   Java 17+\
--   Gradle\
--   SQLite JDBC\
--   IDE (IntelliJ ou VS Code)
+-   Java 17+
+-   Gradle
 
 ### Passo a Passo
 
 ``` bash
-git clone https://github.com/.../seu-projeto.git
-cd seu-projeto
+git clone https://github.com/.../seu-projeto.git](https://github.com/elc117/gamification-2025b-juran.git
+cd gamification-2025b-juran
 ./gradlew build
 ./gradlew run
 ```
 ou
 
 ```
-git clone https://github.com/.../seu-projeto.git
-cd seu-projeto
+git clone https://github.com/.../seu-projeto.git](https://github.com/elc117/gamification-2025b-juran.git
+cd gamification-2025b-juran
 powershell -Command "Invoke-WebRequest -Uri 'https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar' -OutFile 'gradle/wrapper/gradle-wrapper.jar'"
 .\gradlew.bat build
 .\gradlew.bat run
@@ -112,6 +110,7 @@ Adicionar GIF ou vídeo aqui:
 -   https://chatgpt.com/
 -   https://www.blackbox.ai/
 -   https://javalin.io/tutorials/docker
+
 
 
 
